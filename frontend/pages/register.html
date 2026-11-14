@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Registration - Online Banking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="py-5">
+    <div class="container" style="max-width: 750px;">
+        <div class="card p-4 shadow">
+            <div class="text-center mb-4">
+                <i class="bi bi-bank2 text-primary display-5"></i>
+                <h3 class="fw-bold mt-2">New Customer Account Registration</h3>
+                <p class="text-muted small">Fill in the application details to open your online bank account.</p>
+            </div>
+
+            <div id="alertMsg" class="alert d-none"></div>
+
+            <form id="regForm">
+                <h5 class="border-bottom pb-2 mb-3 text-primary">1. Personal Information</h5>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" id="fullName" class="form-control" required placeholder="John Doe">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date of Birth *</label>
+                        <input type="date" id="dateOfBirth" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Gender *</label>
+                        <select id="gender" class="form-select" required>
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" id="email" class="form-control" required placeholder="john@example.com">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mobile Number * (10 Digits)</label>
+                        <input type="tel" id="mobile" class="form-control" pattern="[0-9]{10}" required placeholder="9876543210">
+                    </div>
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3 text-primary mt-4">2. Address Details</h5>
+                <div class="mb-3">
+                    <label class="form-label">Address *</label>
+                    <textarea id="address" class="form-control" rows="2" required placeholder="Street address, apartment, locality"></textarea>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">City *</label>
+                        <input type="text" id="city" class="form-control" required placeholder="New Delhi">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">State *</label>
+                        <input type="text" id="state" class="form-control" required placeholder="Delhi">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">PIN Code * (6 Digits)</label>
+                        <input type="text" id="pinCode" class="form-control" pattern="[0-9]{6}" required placeholder="110001">
+                    </div>
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3 text-primary mt-4">3. Online Banking Credentials</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Username *</label>
+                        <input type="text" id="username" class="form-control" required placeholder="johndoe">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Password *</label>
+                        <input type="password" id="password" class="form-control" minlength="6" required placeholder="At least 6 chars">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Confirm Password *</label>
+                        <input type="password" id="confirmPassword" class="form-control" required placeholder="Re-enter password">
+                    </div>
+                </div>
+
+                <button type="submit" id="regBtn" class="btn btn-primary w-100 py-2 fw-semibold">Submit Application & Create Account</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="login.html" class="text-decoration-none">Already have an account? Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("regForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const pwd = document.getElementById("password").value;
+            const confirmPwd = document.getElementById("confirmPassword").value;
+            const alertDiv = document.getElementById("alertMsg");
+
+            if (pwd !== confirmPwd) {
+                alertDiv.className = "alert alert-danger";
+                alertDiv.innerText = "Passwords do not match!";
+                alertDiv.classList.remove("d-none");
+                return;
+            }
+
+            const payload = {
+                fullName: document.getElementById("fullName").value.trim(),
+                dateOfBirth: document.getElementById("dateOfBirth").value,
+                gender: document.getElementById("gender").value,
+                email: document.getElementById("email").value.trim(),
+                mobile: document.getElementById("mobile").value.trim(),
+                address: document.getElementById("address").value.trim(),
+                city: document.getElementById("city").value.trim(),
+                state: document.getElementById("state").value.trim(),
+                pinCode: document.getElementById("pinCode").value.trim(),
+                username: document.getElementById("username").value.trim(),
+                password: pwd
+            };
+
+            const btn = document.getElementById("regBtn");
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            try {
+                const res = await fetch("http://localhost:8080/api/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alertDiv.className = "alert alert-success";
+                    alertDiv.innerHTML = `<strong>Success!</strong> ${data.message}. Redirecting to login...`;
+                    alertDiv.classList.remove("d-none");
+                    setTimeout(() => window.location.href = "login.html", 2500);
+                } else {
+                    alertDiv.className = "alert alert-danger";
+                    alertDiv.innerText = data.message || "Registration failed.";
+                    alertDiv.classList.remove("d-none");
+                }
+            } catch (err) {
+                alertDiv.className = "alert alert-danger";
+                alertDiv.innerText = "Failed to connect to backend server.";
+                alertDiv.classList.remove("d-none");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Submit Application & Create Account";
+            }
+        });
+    </script>
+</body>
+</html>

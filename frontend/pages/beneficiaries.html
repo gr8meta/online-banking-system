@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Beneficiary Management - SecureBank</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="customer-dashboard.html"><i class="bi bi-bank2 me-2"></i>SecureBank</a>
+            <div class="ms-auto"><a href="customer-dashboard.html" class="btn btn-outline-light btn-sm">&larr; Back to Dashboard</a></div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="row g-4">
+            <div class="col-md-5">
+                <div class="card p-4 shadow">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-person-plus text-primary me-2"></i>Add New Beneficiary</h5>
+                    <div id="alertMsg" class="alert d-none"></div>
+
+                    <form id="benForm">
+                        <div class="mb-3">
+                            <label class="form-label">Beneficiary Full Name *</label>
+                            <input type="text" id="name" class="form-control" required placeholder="Alice Smith">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Account Number *</label>
+                            <input type="text" id="accNo" class="form-control" required placeholder="1002345678">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">IFSC Code *</label>
+                            <input type="text" id="ifsc" class="form-control" required placeholder="SBIN0001234">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bank Name *</label>
+                            <input type="text" id="bank" class="form-control" required placeholder="State Bank of India">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Nickname</label>
+                            <input type="text" id="nickname" class="form-control" placeholder="e.g. Sister, Roommate">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save Beneficiary</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div class="card p-4 shadow">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-people text-primary me-2"></i>Registered Beneficiaries</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>A/C No</th>
+                                    <th>Bank & IFSC</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="benTableBody">
+                                <tr><td colspan="4" class="text-center py-3">Loading beneficiaries...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script>
+        checkAuth("ROLE_CUSTOMER");
+
+        async function loadBeneficiaries() {
+            try {
+                const list = await api.request("/beneficiaries");
+                const tbody = document.getElementById("benTableBody");
+                tbody.innerHTML = "";
+                if (!list || list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">No beneficiaries added yet.</td></tr>`;
+                    return;
+                }
+                list.forEach(b => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${b.beneficiaryName}</strong><br><small class="text-muted">${b.nickname || ''}</small></td>
+                            <td><code>${b.accountNumber}</code></td>
+                            <td>${b.bankName}<br><small class="text-muted">${b.ifscCode}</small></td>
+                            <td>
+                                <button onclick="deleteBen(${b.beneficiaryId})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function deleteBen(id) {
+            if (confirm("Delete this beneficiary?")) {
+                await api.request(`/beneficiaries/${id}`, { method: "DELETE" });
+                loadBeneficiaries();
+            }
+        }
+
+        document.getElementById("benForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const alertDiv = document.getElementById("alertMsg");
+            const payload = {
+                beneficiaryName: document.getElementById("name").value.trim(),
+                accountNumber: document.getElementById("accNo").value.trim(),
+                ifscCode: document.getElementById("ifsc").value.trim(),
+                bankName: document.getElementById("bank").value.trim(),
+                nickname: document.getElementById("nickname").value.trim()
+            };
+            try {
+                const res = await api.request("/beneficiaries", {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                if (res && res.success) {
+                    alertDiv.className = "alert alert-success";
+                    alertDiv.innerText = "Beneficiary added successfully!";
+                    alertDiv.classList.remove("d-none");
+                    document.getElementById("benForm").reset();
+                    loadBeneficiaries();
+                } else {
+                    alertDiv.className = "alert alert-danger";
+                    alertDiv.innerText = res.message || "Failed to add beneficiary.";
+                    alertDiv.classList.remove("d-none");
+                }
+            } catch (err) {
+                alertDiv.className = "alert alert-danger";
+                alertDiv.innerText = "Error saving beneficiary.";
+                alertDiv.classList.remove("d-none");
+            }
+        });
+
+        loadBeneficiaries();
+    </script>
+</body>
+</html>
